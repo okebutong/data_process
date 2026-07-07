@@ -27,11 +27,11 @@
 
 ```
 ┌──────────────────────────────────────────────┐
-│ UI        MainWindow / MonitorWidget /        │  界面与用户交互
-│           HistoryWidget / SerialConfigPage    │
+│ UI        MainWindow / MonitorWidget /       │  界面与用户交互
+│           HistoryWidget / SerialConfigPage   │
 ├──────────────────────────────────────────────┤
-│ Service   Acquisition(总调度) / CommService / │  业务流程编排
-│           Storage                             │
+│ Service  Acquisition(总调度) / CommService / │  业务流程编排
+│           Storage                            │
 ├───────────────────────┬──────────────────────┤
 │ Core                  │ Repository           │
 │ TlvParserWorker       │ ManagerStorage       │  核心算法 / 数据仓储
@@ -57,10 +57,6 @@
 
 ```
 DataProcess/
-├── config/                     # 运行配置（communication.config）与数据库文件
-├── docs/                       # 设计文档（需求、架构、数据库、TLV 协议、线程模型等）
-├── resources/                  # 资源文件
-└── src/
     ├── core/tlvparser/         # TLV 协议解析（状态机）
     ├── infrastructure/
     │   ├── communication/serial/   # QSerialPort 封装（SerialComm）
@@ -79,7 +75,7 @@ DataProcess/
 
 ## TLV 协议
 
-完整帧格式（大端传输）：
+完整帧格式：
 
 ```
 +--------+--------+------+--------+---------+----------+
@@ -110,13 +106,3 @@ DataProcess/
 2. 选择 Qt 6 构建套件（Kit）
 3. 构建并运行
 
-### 命令行
-
-```bash
-cd src
-qmake DataProcess.pro
-# Windows (MSVC)
-nmake        # 或 jom
-# Linux
-make
-```
