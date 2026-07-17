@@ -2,26 +2,27 @@
 #define SQL_MANAGER_H
 
 #include <QObject>
-#include  <QSqlDatabase>
-#include <QSqlQuery>
-class QSqlQueryModel;
-class QItemSelectionModel;
-class SensorData;
-
+#include <QSqlDatabase>
 
 class SqlManager : public QObject
 {
     Q_OBJECT
+    struct DataBaseStatus
+    {
+        bool status;
+        QString errorStr;
+    };
 public:
     explicit SqlManager(QObject *parent = nullptr);
     ~SqlManager();
     QSqlDatabase &getInstance();
     SqlManager(const SqlManager &) = delete;
     SqlManager &operator=(const SqlManager &)=delete;
+    DataBaseStatus openDataBase(const QString &fileName);
+
 
 private:
     QSqlDatabase m_dataBase;
-    const QString m_sqlitePath = "E:/StudyFile/Qt/2026/serialport/DataProcess/resources/DataParse.db3";
 signals:
     void openDatabaseError(const QString &);
 };

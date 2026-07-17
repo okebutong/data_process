@@ -1,6 +1,7 @@
 #include "tlvparser.h"
 #include "logger/myLogger/myloggers.h"
 #include <QDateTime>
+#include <cstring>
 #include "model/data_sensor.h"
 
 TlvParserWorker::TlvParserWorker(QObject *parent): QObject(parent)
@@ -33,7 +34,6 @@ void TlvParserWorker::dispatch(quint8 byte)
     case WAIT_HEAD2:      handlePendingHead2(byte);      break;
     case WAIT_DEV_ID:     handlePendingDevID(byte);      break;
     case WAIT_DATA_TYPE:  handlePendingDataType(byte);   break;
-    case WAIT_LENGTH:     handlePendingLength(byte);     break;
     case WAIT_VALUE:      handlePendingValue(byte);      break;
     case WAIT_CHECKNUM:   handlePendingCheckNum(byte);   break;
     default:
@@ -49,9 +49,9 @@ void TlvParserWorker::resetToHead1() {
     m_currentState = WAIT_HEAD1;
     m_crc = 0XFFFF;
     m_data->clear();
-    m_len = 0;
     m_underExam = 0X0000;
-    m_crc = 0XFFFF;
+    memset(tempBuf, 0, 4);
+    m_readCheckNumSecond = false;
     MyLoggers::getLogger("parse_data")->trace("reset to defalut");
 }
 
@@ -59,7 +59,6 @@ void TlvParserWorker::resetToHead1() {
 void TlvParserWorker::handlePendingHead1(quint8 byte) {
     if (byte  == 0XAA) {
         m_currentState = WAIT_HEAD2;
-        MyLoggers::getLogger("parse_data")->trace("read head1 success");
     } else {
         MyLoggers::getLogger("parse_data")->warn("read head1 error {}", byte);
         resetToHead1();
@@ -70,7 +69,6 @@ void TlvParserWorker::handlePendingHead1(quint8 byte) {
 void TlvParserWorker::handlePendingHead2(quint8 byte) {
     if (byte  == 0X55) {
         m_currentState = WAIT_DEV_ID;
-        MyLoggers::getLogger("parse_data")->trace("read head2 success");
     } else {
         MyLoggers::getLogger("parse_data")->warn("read head2 error {}", byte);
         resetToHead1();
@@ -89,7 +87,6 @@ void TlvParserWorker::handlePendingDevID(quint8 byte) {
     m_data->setDeviceId(byte);
     uint8_t index = (m_crc ^ byte) & 0xFF;
     m_crc = (m_crc >> 8) ^ crc16_table[index & 0xFF];
-    MyLoggers::getLogger("parse_data")->trace("read device Id success");
 }
 
 // ==================== 4. 等待数据类型 ====================
@@ -99,44 +96,35 @@ void TlvParserWorker::handlePendingDataType(quint8 byte) {
         resetToHead1();
         return ;
     }
-    m_currentState = WAIT_LENGTH;
+    m_currentState = WAIT_VALUE;
     m_data->setDataType(byte);
     uint8_t index = (m_crc ^ byte) & 0xFF;
     m_crc = (m_crc >> 8) ^ crc16_table[index & 0xFF];
-    MyLoggers::getLogger("parse_data")->trace("read data type success");
-
 }
 
-// ==================== 5. 等待长度 ====================
-void TlvParserWorker::handlePendingLength(quint8 byte) {
-    if (byte == 0X00)
-    {
-        MyLoggers::getLogger("parse_data")->warn("read data length error {}", byte);
-        resetToHead1();
-        return ;
-    }
-    m_currentState = WAIT_VALUE;   // 长度收完，进入数据区
-    m_len = byte;
-    uint8_t index = (m_crc ^ byte) & 0xFF;
-    m_crc = (m_crc >> 8) ^ crc16_table[index & 0xFF];
-    MyLoggers::getLogger("parse_data")->trace("read data length success {}", m_len);
-}
 
-// ==================== 6. 等待数据区（变长，完全由你外部控制） ====================
+// ==================== 5. 等待数据区 ====================
 void TlvParserWorker::handlePendingValue(quint8 byte) {
 
-    m_value = (m_value << 8) | byte;
-    m_num++;
+    if (isBigEndian())
+    {
+        tempBuf[m_num] = byte;
+    }else
+    {
+        tempBuf[3 - m_num] = byte;
+    }
+
 
     uint8_t index = (m_crc ^ byte) & 0xFF;
     m_crc = (m_crc >> 8) ^ crc16_table[index & 0xFF];
-
-    if (m_num == m_len)
+    m_num++;
+    if (m_num == (m_len))
     {
         m_currentState = WAIT_CHECKNUM;
-        m_data->setValue(m_value);
+        float temp = 0.0;
+        memcpy(&temp, tempBuf, 4);
+        m_data->setValue(temp);
         m_num = 0;
-        m_value = 0;
     }
 }
 
@@ -152,38 +140,38 @@ void TlvParserWorker::handlePendingCheckNum(quint8 byte) {
     else
     {
         m_underExam = (m_underExam << 8) |byte;
-        MyLoggers::getLogger("parse_data")->trace("underExam:{} byte:{}", m_underExam, byte);
-
-        MyLoggers::getLogger("parse_data")->trace("underExam:{} crc:{}", m_underExam, m_crc);
 
         m_readCheckNumSecond = false;
 
         if (m_underExam == m_crc )
         {
-            qreal time = QDateTime::currentSecsSinceEpoch();
+            qint64 time = QDateTime::currentSecsSinceEpoch();
 
-            // m_index / m_currentTime 需跨帧保持：同一秒内的多帧依次 +1ms，
-            // 保证时间戳唯一（time 为数据库主键，重复会被 INSERT OR IGNORE 丢弃）
-            if (time != m_currentTime)
-            {
-                m_index = 0;
-                m_currentTime = time;
-            }
-            m_index++; //相同秒数，进行自加
-            m_data->setTimestamp(m_currentTime + m_index * 0.001);
+            m_data->setTimestamp(time);
 
-            emit sensorParsed(m_data->getInstance());
-            MyLoggers::getLogger("parse_data")->trace("parse frame data success");
+            emit sensorParsed(m_data->getObject());
         }
         else
         {
             emit parseFrameDataError();
-            MyLoggers::getLogger("parse_data")->trace("parse frame data checknum error");
         }
         resetToHead1();
     }
 
 }
+
+bool TlvParserWorker::isBigEndian()
+{
+    union
+    {
+        int i;
+        char c;
+    }un;
+    un.i = 0x01;
+    return (un.c == 0);
+}
+
+
 
 void TlvParserWorker::setCrc16_table()
 {

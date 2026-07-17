@@ -66,15 +66,10 @@ CMakeLists.txt.user*
 *.Debug
 *.Release
 
-# Python byte code
-*.pyc
-
-# Binaries
-# --------
 *.dll
 *.exe
 
-# Directories with generated files
+
 .moc/
 .obj/
 .pch/
@@ -85,3 +80,31 @@ CMakeLists.txt.user*
 /resources/*
 /config/
 /docs
+
+**/Objects/
+**/Listings/
+**/DebugConfig/
+**/RTE/_Target*/
+*.uvguix*
+*.uvoptx
+*.uvprojx.bak
+*.axf
+*.hex
+*.o
+*.d
+*.crf
+*.lst
+*.map
+*.build_log.htm
+*.dep
+*.iex
+*.sct
+JLinkLog.txt
+JLinkSettings.ini
+
+
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3

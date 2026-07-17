@@ -11,6 +11,10 @@ MonitorWidget::MonitorWidget( QWidget *parent)
 {
     ui->setupUi(this);
 
+    ui->graphicsView->setMouseTracking(true);
+    ui->graphicsView->setDragMode(QGraphicsView::ScrollHandDrag);
+    ui->graphicsView->setRubberBand(QChartView::NoRubberBand);
+
     m_beginTime = QDateTime::currentSecsSinceEpoch() / 1.0;
     m_limitSize = 200;
     m_visibleSize = 100;
@@ -34,17 +38,12 @@ void MonitorWidget::updateData(const SensorData &sensorData)
     QString seriesName = QString::asprintf("dev_%d", sensorData.getDeviceId());
     m_valueMax = qMax(m_valueMax, sensorData.getValue());
     m_valueMin = qMin(m_valueMin, sensorData.getValue());
-    while(m_dataMap[seriesName].size() > m_limitSize)
-    {
-        m_dataMap[seriesName].removeFirst();
-    }
+
     addSeries(seriesName, QPointF( sensorData.getTimestamp() - m_beginTime, sensorData.getValue()));
     m_axisX->setRange(currentTime - m_beginTime - m_visibleSize,
-                    currentTime - m_beginTime);
+                      currentTime - m_beginTime);
     m_axisY->setRange(m_valueMin, m_valueMax);
 }
-
-
 
 void MonitorWidget::addSeries(const QString &seriesName, const QPointF &point)
 {
@@ -75,10 +74,7 @@ void MonitorWidget::addSeries(const QString &seriesName, const QPointF &point)
         line->removePoints(0, 1);
     }
     line->append(point);
-
 }
-
-
 
 void MonitorWidget::createChart(const QString &chartName)
 {
@@ -94,7 +90,7 @@ void MonitorWidget::createChart(const QString &chartName)
     m_axisX->setTitleText("Time");
     m_axisX->setRange(0, 20);
     m_axisX->setTickCount(15) ;
-    // m_axisX->setReverse(true);
+
     m_axisX->setLabelsAngle(45);
     m_axisX->setLabelFormat("%0.4f");
     m_chart->addAxis(m_axisX, Qt::AlignBottom);
@@ -103,7 +99,7 @@ void MonitorWidget::createChart(const QString &chartName)
     m_axisY->setRange(0, 260);
     m_axisY->setTitleText("Value");
     m_axisY->setLabelFormat("%0.0f");
-    m_chart->addAxis(m_axisY, Qt::AlignLeft);
+    m_chart->addAxis(m_axisY, Qt::AlignRight);
 }
 
 void MonitorWidget::onLegendMarkerClicked()
@@ -124,4 +120,74 @@ void MonitorWidget::onLegendMarkerClicked()
     color.setAlphaF(alpha);
     brush.setColor(color);
     marker->setBrush(brush); //设置图例标记
+}
+
+void MonitorWidget::mousePressEvent(QMouseEvent *event)
+{
+    // if (event->button() == Qt::LeftButton)
+    //     beginPoint= event->pos();
+
+    // QWidget::mousePressEvent(event);
+
+}
+
+void MonitorWidget::mouseReleaseEvent(QMouseEvent *event)
+{
+    // if (event->button() == Qt::LeftButton)
+    // {
+    //     endPoint= event->pos();
+    //     if ((ui->graphicsView->dragMode() == QGraphicsView::ScrollHandDrag)
+    //         &&(ui->graphicsView->rubberBand() == QChartView::NoRubberBand)) //移动
+    //         m_chart->scroll(beginPoint.x()-endPoint.x(), endPoint.y() - beginPoint.y());
+    //     else if (m_customZoom && ui->graphicsView->dragMode() == QGraphicsView::RubberBandDrag)
+    //     {//放大
+    //         QRectF rectF;
+    //         rectF.setTopLeft(beginPoint);
+    //         rectF.setBottomRight(endPoint);
+    //         m_chart->zoomIn(rectF); //按矩形区域放大
+    //     }
+    // }
+    // QWidget::mouseReleaseEvent(event); //父类继续处理事件，必须如此调用
+}
+
+void MonitorWidget::mouseMoveEvent(QMouseEvent *event)
+{
+}
+
+void MonitorWidget::wheelEvent(QWheelEvent *event)
+{
+    // QPoint numDegrees = event->angleDelta()/8;
+    // if (!numDegrees.isNull())
+    // {
+    //     QPoint numSteps = numDegrees/15; //步数
+    //     int stepY=numSteps.y(); //垂直方向上滚轮的滚动步数
+    //     if (stepY >0) //大于 0，前向滚动，放大
+    //         m_chart->zoom(1.1*stepY);
+    //     else
+    //         m_chart->zoom(-0.9*stepY);
+    // }
+    // event->accept();
+}
+
+void MonitorWidget::keyPressEvent(QKeyEvent *event)
+{
+    // switch (event->key())
+    // {
+    // case Qt::Key_Left:
+    //     m_chart->scroll(10, 0); break;
+    // case Qt::Key_Right:
+    //     m_chart->scroll(-10, 0); break;
+    // case Qt::Key_Up:
+    //     m_chart->scroll(0, -10); break;
+    // case Qt::Key_Down:
+    //     m_chart->scroll(0, 10); break;
+    // case Qt::Key_PageUp:
+    //     m_chart->scroll(0, -50); break;
+    // case Qt::Key_PageDown:
+    //     m_chart->scroll(0, 50); break;
+    // case Qt::Key_Escape:
+    //     m_chart->zoomReset(); break;
+    // default:
+    //     QWidget::keyPressEvent(event);
+    // }
 }

@@ -16,10 +16,11 @@ Storage::~Storage()
 void Storage::initStorage()
 {
     m_storage = new ManagerStorage();
-    m_storage->setWALConfig();
     connect(m_storage, &ManagerStorage::storageOperatorError, this, &Storage::operatorError);
-    connect(m_storage, &ManagerStorage::openDatabaseError, this, &Storage::openError);
+    connect(m_storage, &ManagerStorage::openStorageError, this, &Storage::openError);
 
+    if (m_storage->openFile())
+        m_storage->setWALConfig();
 }
 
 void Storage::storageSaveData(const SensorData &data)
@@ -38,7 +39,7 @@ void Storage::findHistoryData(quint64 begin, quint64 end)
     {
         emit historyReady( QList<SensorData>());
         MyLoggers::getLogger("DataParse")->trace("[storage service] [find operatro]error: time begin:{} > end:{}", begin, end);
-        begin = end - 10;
+        return ;
     }
     if (m_storage == nullptr)
     {

@@ -1,6 +1,6 @@
 #include "myloggers.h"
 
-spdlog::level::level_enum MyLoggers::global_level = spdlog::level::trace;
+spdlog::level::level_enum MyLoggers::global_level = spdlog::level::info;
 
 spdlog::level::level_enum MyLoggers::getGlobalLevel()
 {
@@ -17,7 +17,7 @@ std::vector<spdlog::sink_ptr> MyLoggers::createSinks(const std::string &log_file
     sinks.push_back(sink1);
 
     auto sink2 = std::make_shared<spdlog::sinks::daily_file_sink_mt>(log_file_name, 4,20);
-    sink2->set_level(spdlog::level::debug);
+    sink2->set_level(spdlog::level::trace);
 
     sink2->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%l]:%v");
     sinks.push_back(sink2);

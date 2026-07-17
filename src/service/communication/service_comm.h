@@ -28,15 +28,15 @@ private:
     SerialConfig m_configData;
     enum{
         PortClose,
-        ConfigGet,
         PortOpen,
-    }m_portStatus;
-    bool m_getConfigFlag = false;
+    }m_portStatus; //用来显示串口的状态
+    bool m_getConfigFlag = false; //用来显示是否获取到串口参数的状态
 signals:
     void dataReceived(const QByteArray &value);
     void connectionError( QString );
     void connectionOpened();
     void connectionClosed();
+    void commDeviceRemove();
 };
 
 #endif // SERVICE_COMM_H

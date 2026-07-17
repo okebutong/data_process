@@ -3,7 +3,7 @@
 #include <QDateTime>
 #include <QSqlError>
 #include <QTimer>
-
+#include <QFile>
 #include "infrastructure/sql_manager/sql_manager.h"
 #include "model/data_sensor.h"
 #include "logger/myLogger/myloggers.h"
@@ -12,22 +12,60 @@
 ManagerStorage::ManagerStorage(QObject *parent):QObject(parent)
 {
     m_sqlManager = new SqlManager(parent);
+    MyLoggers::getLogger("DataParse")->trace("ManagerStorage init success");
 
     QTimer *timer = new QTimer(this);
     timer->setSingleShot(false);
     timer->setInterval(1000);
     connect(timer, &QTimer::timeout, this, &ManagerStorage::insertSensorDataList);
-    connect(m_sqlManager, &SqlManager::openDatabaseError, this, &ManagerStorage::openDatabaseError);
     timer->start();
-
-    MyLoggers::getLogger("DataParse")->trace("ManagerStorage init success");
 }
 
 
+
+bool ManagerStorage::openFile(void)
+{
+    QFile file(m_sqlitePath);
+    if (!file.exists())
+    {
+        //file not exist
+        if (!file.open(QIODeviceBase::ReadWrite))
+        {
+            file.close();
+            emit openStorageError(file.errorString());
+            MyLoggers::getLogger("DataParse")->info("SqlManager create file error {}", file.errorString().toStdString());
+            return false;
+        }
+    }
+    auto status = m_sqlManager->openDataBase(m_sqlitePath);
+    if (!status.status)
+    {
+        emit openStorageError(status.errorStr);
+        return false;
+    }
+    QSqlDatabase sql = m_sqlManager->getInstance();
+    if (!sql.tables().contains(m_tableName))
+    {
+        MyLoggers::getLogger("DataParse")->critical("SqlManager database not have table {},error {}",m_tableName.toStdString(), sql.lastError().text().toStdString());
+        QSqlQuery query(sql);
+
+        bool res = query.exec(m_createDatabaseCommand);
+        if (res)
+            MyLoggers::getLogger("DataParse")->info("SqlManager create table success");
+        else
+        {
+            MyLoggers::getLogger("DataParse")->critical("SqlManager create file success ");
+            emit openStorageError(QString("New database can not create table"));
+            return false;
+        }
+    }
+    return true;
+}
+
 ManagerStorage::~ManagerStorage()
 {
+    insertSensorDataList();
     MyLoggers::getLogger("DataParse")->trace("ManagerStorage destruct success");
-
 }
 
 
@@ -57,9 +95,10 @@ void ManagerStorage::insertSensorDataList()
     {
         MyLoggers::getLogger("DataParse")->warn("ManagerStorage insert query text {0}",query.lastQuery().toStdString());
         emit storageOperatorError(query.lastError().text());
+        return ;
     }
-
-    for (const SensorData &varData : m_insertDataList) {
+    const QList<SensorData> List = m_insertDataList;
+    for (auto &varData : List) {
         query.bindValue(":time", varData.getTimestamp());
         query.bindValue(":device_id", varData.getDeviceId());
         query.bindValue(":type", varData.getDataType());
@@ -104,6 +143,7 @@ QList<SensorData> ManagerStorage::findSensorDataByTime(quint64 begin, quint64 en
     if (!query.prepare(sqlCommand))
     {
         emit storageOperatorError(query.lastError().text());
+        return QList<SensorData>{};
     }
     query.bindValue(":time1", begin);
     query.bindValue(":time2", end);
@@ -119,8 +159,7 @@ QList<SensorData> ManagerStorage::findSensorDataByTime(quint64 begin, quint64 en
 
     if (!query.first())
     {
-        MyLoggers::getLogger("DataParse")->warn("ManagerStorage find result first is invaild");
-        emit storageOperatorError(query.lastError().text());
+        MyLoggers::getLogger("DataParse")->trace("ManagerStorage find result is empty");
         return QList<SensorData>(0);
     }
     while(query.isValid())
@@ -136,10 +175,18 @@ QList<SensorData> ManagerStorage::findSensorDataByTime(quint64 begin, quint64 en
             continue;
         }
 
-        data->setValue(query.value("value").toInt());
-        dataList << data->getInstance();
+        data->setValue(query.value("value").toReal(&result));
+        if (!result)
+        {
+            data->clear();
+            query.next();
+            continue;
+        }
+        dataList << data->getObject();
         query.next();
     }
     MyLoggers::getLogger("DataParse")->info("ManagerStorage find success list size:{}",dataList.size());
     return dataList;
 }
+
+

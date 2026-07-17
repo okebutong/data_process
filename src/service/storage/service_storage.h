@@ -23,7 +23,7 @@ public slots:
     void findHistoryData(quint64 begin, quint64 end);
 
 private:
-    ManagerStorage *m_storage;
+    ManagerStorage *m_storage = nullptr; //创建变量时要时刻牢记初始化值
 };
 
 #endif // SERVICE_STORAGE_H

@@ -52,8 +52,8 @@ private:
     quint64 m_endTime = 0;
     quint64 m_startMaxTime = 0;
     quint64 m_endMaxTime = 0;
-    quint64 m_maxValue = 0;
-    quint64 m_minValue = 0;
+    qreal m_maxValue = 0;
+    qreal m_minValue = 0;
 
 };
 

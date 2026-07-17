@@ -8,7 +8,7 @@ CommService::CommService(QObject *parent): QObject{parent}
     m_portStatus = PortClose;
     connect(m_serialComm, &SerialComm::dataReceived,
             this, &CommService::dataReceived);
-
+    connect(m_serialComm, &SerialComm::serialDeviceRemove, this, &CommService::commDeviceRemove);
     MyLoggers::getLogger("DataParse")->trace("CommService success init");
 
 }
@@ -27,8 +27,8 @@ void CommService::startCommunication()
 {
     if (m_portStatus == PortClose && m_getConfigFlag)
     {
-       auto map = m_serialComm->openConnection();
-        if (map.firstKey())
+       auto status = m_serialComm->openConnection();
+        if (status.status)
         {
             m_portStatus = PortOpen;
             MyLoggers::getLogger("DataParse")->trace("CommService success open");
@@ -37,8 +37,12 @@ void CommService::startCommunication()
         else
         {
             MyLoggers::getLogger("DataParse")->warn("CommService open error");
-            emit connectionError(map[false]);
+            emit connectionError(status.errorStr);
         }
+    }
+    else if (m_getConfigFlag == false)
+    {
+        emit connectionError("serial have null parma");
     }
 }
 

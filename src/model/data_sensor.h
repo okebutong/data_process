@@ -5,15 +5,15 @@
 class SensorData
 {
 private:
-    qreal timestamp;
+    qint64 timestamp;
     uint16_t deviceId;
     uint dataType;
     qreal value;
 public :
-    inline SensorData() : timestamp(0.0),
-        deviceId(std::move(0)),
-        dataType(std::move(0)),
-        value(std::move(0))
+    inline SensorData() : timestamp(0),
+        deviceId(0),
+        dataType(0),
+        value(0)
     {}
     void clear()
     {
@@ -22,16 +22,15 @@ public :
         dataType = 0;
         value = 0.0;
     }
-    qreal getTimestamp() const;
-    void setTimestamp(qreal newTimestamp);
+    qint64 getTimestamp() const;
+    void setTimestamp(qint64 newTimestamp);
     uint16_t getDeviceId() const;
     void setDeviceId(uint16_t newDeviceId);
     uint getDataType() const;
     void setDataType(uint newDataType);
     qreal getValue() const;
     void setValue(qreal newValue);
-    SensorData getInstance();
-
+    SensorData getObject();
 };
 
 inline uint16_t SensorData::getDeviceId() const
@@ -64,17 +63,17 @@ inline void SensorData::setValue(qreal newValue)
     value = newValue;
 }
 
-inline SensorData SensorData::getInstance()
+inline SensorData SensorData::getObject()
 {
     return *this;
 }
 
-inline qreal SensorData::getTimestamp() const
+inline qint64 SensorData::getTimestamp() const
 {
     return timestamp;
 }
 
-inline void SensorData::setTimestamp(qreal newTimestamp)
+inline void SensorData::setTimestamp(qint64 newTimestamp)
 {
     timestamp = newTimestamp;
 }

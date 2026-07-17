@@ -23,18 +23,18 @@ void HistoryWidget::updateData(const QList<SensorData> &sensorList)
     m_chart->removeAllSeries();
 
     QMap<QString, QList<QPointF>>dataMap;
-    for(auto sensorData : sensorList)
+    if (sensorList.isEmpty())
     {
-        qDebug()<<"time:"<<(quint64)sensorData.getTimestamp()
-                 <<"value:"<<sensorData.getValue();
+        MyLoggers::getLogger("DataParse")->warn("history page receive list is empty");
+        return;
     }
     m_startMaxTime = (quint64)sensorList.first().getTimestamp();
     m_endMaxTime = (quint64)sensorList.last().getTimestamp();
     MyLoggers::getLogger("DataParse")->trace("history page start time:{} end time:{}", m_startMaxTime, m_endMaxTime);
 
     for (auto sensorData : sensorList) {
-        m_maxValue = qMax(m_maxValue, (quint64)sensorData.getValue());
-        m_minValue = qMin(m_minValue, (quint64)sensorData.getValue());
+        m_maxValue = qMax(m_maxValue, sensorData.getValue());
+        m_minValue = qMin(m_minValue, sensorData.getValue());
         QString seriesName = QString::asprintf("dev_%d", sensorData.getDeviceId());
         dataMap[seriesName]<<QPointF(sensorData.getTimestamp() - m_startMaxTime, sensorData.getValue());
     }
@@ -148,14 +148,12 @@ void HistoryWidget::setSliderMaxMin(int min, int max)
 }
 void HistoryWidget::on_pushButton_query_clicked()
 {
-    qDebug()<<"start"<<m_startTime<<"end"<<m_endTime;
     emit historyQueryRequested(m_startTime, m_endTime);
 }
 
 
 void HistoryWidget::on_dateTimeEdit_start_dateTimeChanged(const QDateTime &dateTime)
 {
-    qDebug()<<"start"<<dateTime.toString("yyyy-MM-dd h:mm:ss");
     m_startTime = dateTime.toSecsSinceEpoch();
 }
 
@@ -168,7 +166,6 @@ void HistoryWidget::on_dateTimeEdit_end_dateTimeChanged(const QDateTime &dateTim
 
 void HistoryWidget::on_horizontalSlider_min_actionTriggered(int action)
 {
-    qDebug()<<"position"<<action<<"min"<<ui->horizontalSlider_min->value();
     int position = ui->horizontalSlider_min->value();
     if (position > ui->horizontalSlider_max->value()) {
         position = ui->horizontalSlider_max->value() - 10;
@@ -179,7 +176,6 @@ void HistoryWidget::on_horizontalSlider_min_actionTriggered(int action)
 
 void HistoryWidget::on_horizontalSlider_max_actionTriggered(int action)
 {
-    qDebug()<<"position"<<action<<"min"<<ui->horizontalSlider_max->value();
     int position = ui->horizontalSlider_max->value();
     if (position < ui->horizontalSlider_min->value()) {
         position = ui->horizontalSlider_min->value() + 10;

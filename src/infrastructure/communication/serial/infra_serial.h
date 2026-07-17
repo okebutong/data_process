@@ -7,29 +7,37 @@
 #include "model/config_serial.h"
 #include <QVariant>
 
+
+
 class QSerialPort;
 class QSerialPortInfo;
 
 class SerialComm  : public QObject
 {
     Q_OBJECT
+    struct ConnectionStatus
+    {
+        bool status;
+        QString errorStr;
+    };
 public:
     explicit SerialComm(QObject *parent = nullptr);
     ~SerialComm();
 private:
     QSerialPort *m_serialPort;
     QByteArray m_recvArray;
-
+private slots:
+    void handleSerialError(QSerialPort::SerialPortError error);
 public :
-
     void readData();
-    QMap<bool, QString > openConnection() ;
+    ConnectionStatus openConnection() ;
     void closeConnection() ;
     void setConfig(const SerialConfig &config);
 
 signals:
     void dataReceived(const QByteArray& data);
     void openPortErrorMsg(const QString &);
+    void serialDeviceRemove();
 };
 
 

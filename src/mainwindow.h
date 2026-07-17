@@ -47,13 +47,14 @@ private slots:
 
     void changeStopStatus();
 
-    void openErrorDialog(QString);
+    void openErrorDialog(const QString &errorMsg);
 
     void printErrorMsg(const QString &);
 
     void changeErrorByte(quint32 byte);
 
-    void changeReceivedByte(quint32 byte);
+    void changeReceivedByte(const SensorData &data);
+    void changeDeviceStatus();
 private:
     Ui::MainWindow *ui;
     Acquisition *m_acqService;
@@ -63,6 +64,7 @@ private:
     QLabel *m_connStatusLabel;
     QLabel *m_receivedDataByte;
     QLabel *m_parsedErrorByteLabel;
+    int m_parsedDataByte = 0;
 };
 
 

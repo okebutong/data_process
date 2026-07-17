@@ -15,21 +15,32 @@ SerialComm::~SerialComm()
     MyLoggers::getLogger("DataParse")->trace("SerialComm destruct success");
 }
 
-QMap<bool, QString > SerialComm::openConnection()
+void SerialComm::handleSerialError(QSerialPort::SerialPortError error)
 {
-    QMap<bool, QString>map;
+    if ((error == QSerialPort::PermissionError) && m_serialPort->isOpen())
+    {
+        MyLoggers::getLogger("DataParse")->warn("SerialComm device remove");
+        emit serialDeviceRemove();
+    }
+}
+
+SerialComm::ConnectionStatus SerialComm::openConnection()
+{
+
     if (!m_serialPort->open(QSerialPort::ReadOnly))
     { //这个地方打不开，也没必要再上一级重试，直接返回错误原因
         MyLoggers::getLogger("DataParse")->critical("[{}] [{}] serial port open error {}", m_serialPort->errorString().toStdString(), __FILE__, __LINE__);
         emit openPortErrorMsg(m_serialPort->errorString());
-        map.insert(false,m_serialPort->errorString());
-        return map;
+        ConnectionStatus status = {false,m_serialPort->errorString()};
+        return status;
     }
 
     connect(m_serialPort, &QSerialPort::readyRead, this, &SerialComm::readData);
+    connect(m_serialPort, &QSerialPort::errorOccurred, this, &SerialComm::handleSerialError);
+
     MyLoggers::getLogger("DataParse")->trace("serial port open succ");
-    map.insert(true,"success");
-    return map;
+    ConnectionStatus status = {true,"success"};
+    return status;
 }
 
 void SerialComm::closeConnection()
